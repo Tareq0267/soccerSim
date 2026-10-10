@@ -1,0 +1,43 @@
+[workspace]
+name = "soccer-sim"
+channels = ["robostack-kilted", "conda-forge"]
+platforms = ["osx-arm64"]
+
+[dependencies]
+python = "3.12.*"
+ros-kilted-desktop = "*"
+ros-kilted-behaviortree-cpp = "*"
+ros-kilted-backward-ros = "*"
+ros-kilted-tf2-geometry-msgs = "*"
+colcon-common-extensions = "*"
+cmake = "*"
+ninja = "*"
+compilers = "*"
+pkg-config = "*"
+eigen = "*"
+yaml-cpp = "*"
+opencv = "*"
+librerun-sdk = "*"
+numpy = "*"
+scipy = "*"
+pyyaml = "*"
+pytest = "*"
+# conda-forge pytorch shares conda's single libomp; PyPI torch bundles a second one and aborts on import.
+pytorch = ">=2.3"
+
+[pypi-dependencies]
+mujoco = ">=3.2.6"
+onnxruntime = "*"
+soccer_sim = { path = ".", editable = true }
+booster_assets = { path = "vendor/booster_assets", editable = true }
+
+[activation.env]
+PYTHONPATH = "$PIXI_PROJECT_ROOT/vendor/booster_deploy"
+ROBOTEDGE_ROOT = "/Users/johnnytan5/Robotedge-5v5-RCAP2026"
+SDK_ZIP = "$HOME/Downloads/sdk_release.zip"
+
+[tasks]
+fetch-models = "bash scripts/fetch_models.sh"
+build-ws = "bash scripts/setup_ws.sh"
+test = "pytest -m 'not slow and not ros'"
+test-slow = "pytest -m slow"

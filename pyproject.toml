@@ -1,0 +1,20 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "soccer_sim"
+version = "0.1.0"
+requires-python = ">=3.10"
+
+[tool.setuptools]
+packages = ["soccer_sim"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+# ROS's launch_testing pytest plugins use a hook signature newer pytest rejects; this project doesn't use them.
+addopts = "-p no:launch_testing -p no:launch_ros"
+markers = [
+    "slow: steps MuJoCo physics for several simulated seconds",
+    "ros: needs a built and sourced ros_ws",
+]

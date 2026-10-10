@@ -1,0 +1,6 @@
+[submodule "vendor/booster_deploy"]
+	path = vendor/booster_deploy
+	url = https://github.com/BoosterRobotics/booster_deploy.git
+[submodule "vendor/booster_assets"]
+	path = vendor/booster_assets
+	url = https://github.com/BoosterRobotics/booster_assets.git

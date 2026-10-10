@@ -1,0 +1,11 @@
+.pixi/
+__pycache__/
+*.egg-info/
+.pytest_cache/
+.superpowers/
+vendor/booster_sdk/
+vendor/models/
+ros_ws/build/
+ros_ws/install/
+ros_ws/log/
+ros_ws/src/robotedge

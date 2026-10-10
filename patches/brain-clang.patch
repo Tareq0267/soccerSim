@@ -1,0 +1,71 @@
+diff -ru ./include/brain_data.h ../b/include/brain_data.h
+--- a/include/brain_data.h	2026-10-10 19:05:35
++++ b/include/brain_data.h	2026-10-10 19:05:35
+@@ -35,8 +35,8 @@
+     // Assignment captured with the plan. The normal ball owner/assist
+     // election may continue to update after a restart has been frozen.
+     std::array<AssistSlot, MAX_NUM_PLAYERS> assistSlots{};
+-    rclcpp::Time phaseChangedAt;
+-    rclcpp::Time executionStartTime;
++    rclcpp::Time phaseChangedAt = rclcpp::Time();
++    rclcpp::Time executionStartTime = rclcpp::Time();
+ };
+ 
+ struct TeamOutboundSnapshot
+diff -ru ./include/types.h ../b/include/types.h
+--- a/include/types.h	2026-10-10 19:05:35
++++ b/include/types.h	2026-10-10 19:05:35
+@@ -100,7 +100,7 @@
+     double range = 0.0;                               // Planar distance from the robot center to the object
+     double pitchToRobot = 0.0;
+     double yawToRobot = 0.0;                          // Object pitch/yaw relative to robot forward, radians; down/left positive
+-    rclcpp::Time timePoint;                           // Detection timestamp
++    rclcpp::Time timePoint = rclcpp::Time();                           // Detection timestamp
+ 
+     // --- Object-specific fields; not populated for every class ---
+     int id = 0;    // Detected ID
+@@ -172,7 +172,7 @@
+     Line posToField;
+     Line posToRobot;
+     Line posOnCam;
+-    rclcpp::Time timePoint;
++    rclcpp::Time timePoint = rclcpp::Time();
+     LineDir dir;
+     LineHalf half;
+     LineSide side;
+@@ -192,12 +192,12 @@
+ struct VisionBox {
+     vector<double> posToField;
+     vector<double> posToRobot;
+-    rclcpp::Time timePoint;                           // Detection timestamp
++    rclcpp::Time timePoint = rclcpp::Time();                           // Detection timestamp
+ };
+ 
+ struct TimestampedData {
+     vector<double> data;
+-    rclcpp::Time timePoint;
++    rclcpp::Time timePoint = rclcpp::Time();
+ };
+ 
+ enum class AssistSlot : uint8_t {
+diff -ru ./src/brain_communication.cpp ../b/src/brain_communication.cpp
+--- a/src/brain_communication.cpp	2026-10-10 19:05:35
++++ b/src/brain_communication.cpp	2026-10-10 19:05:55
+@@ -489,7 +489,7 @@
+         discoveryBind.sin_family = AF_INET;
+         discoveryBind.sin_addr.s_addr = htonl(INADDR_ANY);
+         discoveryBind.sin_port = htons(_discovery_port);
+-        if (bind(
++        if (::bind(
+                 _discovery_recv_socket, reinterpret_cast<sockaddr *>(&discoveryBind),
+                 sizeof(discoveryBind)) < 0) {
+             throw std::runtime_error(std::string("discovery bind: ") + strerror(errno));
+@@ -508,7 +508,7 @@
+         stateBind.sin_family = AF_INET;
+         stateBind.sin_addr.s_addr = htonl(INADDR_ANY);
+         stateBind.sin_port = htons(_state_port);
+-        if (bind(
++        if (::bind(
+                 _state_send_socket, reinterpret_cast<sockaddr *>(&stateBind),
+                 sizeof(stateBind)) < 0) {
+             throw std::runtime_error(std::string("state bind: ") + strerror(errno));

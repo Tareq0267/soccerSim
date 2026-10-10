@@ -5,6 +5,9 @@ __pycache__/
 .superpowers/
 vendor/booster_sdk/
 vendor/models/
+vendor/rerun_sdk/
+vendor/cache/
+ros_ws/src/brain
 ros_ws/build/
 ros_ws/install/
 ros_ws/log/

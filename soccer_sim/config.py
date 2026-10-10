@@ -75,6 +75,9 @@ class SimConfig:
     max_marking_range: float = 5.0
     max_line_range: float = 5.0
     max_depth_m: float = 10.0
+    # ponytail: shadows/reflections cost ~12 ms per RGB frame on an M-series Mac and push camera ticks past the
+    # 20 ms real-time budget; YOLO still finds the ball without them (conf ~0.5-0.7 vs ~0.7-0.8 with).
+    render_shadows: bool = False
     # ponytail: ground-truth goalposts/markings/lines are perfect; raise to emulate vision noise.
     detection_noise_std: float = 0.0
     ball_detector: str = "yolo"  # "yolo" (real model on rendered frames) | "ground_truth"

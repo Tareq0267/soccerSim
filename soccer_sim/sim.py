@@ -249,6 +249,8 @@ class SoccerController(BaseController):
         r = self._renderer
         r.disable_depth_rendering()
         r.update_scene(self.mj_data, camera=self._cam)
+        r.scene.flags[mujoco.mjtRndFlag.mjRND_SHADOW] = self.sim_cfg.render_shadows
+        r.scene.flags[mujoco.mjtRndFlag.mjRND_REFLECTION] = self.sim_cfg.render_shadows
         rgb = r.render().copy()
         r.enable_depth_rendering()
         r.update_scene(self.mj_data, camera=self._cam)

@@ -39,4 +39,7 @@ colcon build --symlink-install \
   --packages-up-to $PACKAGES \
   --cmake-args -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=OFF \
   "-DCMAKE_CXX_FLAGS=-I$ROOT/vendor/booster_sdk/include" \
-  "-Drerun_sdk_DIR=$ROOT/vendor/rerun_sdk/lib/cmake/rerun_sdk"
+  "-Drerun_sdk_DIR=$ROOT/vendor/rerun_sdk/lib/cmake/rerun_sdk" \
+  "-DCMAKE_EXE_LINKER_FLAGS=-Wl,-dead_strip_dylibs"
+# -dead_strip_dylibs: ament links every message package's *__rosidl_generator_py dylib into brain_node;
+# Linux never loads their Python symbols, but macOS binds them at startup and aborts.

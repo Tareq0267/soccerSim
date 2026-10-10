@@ -6,8 +6,11 @@
 # Extra bridge parameters: BRIDGE_ARGS='-p ball_detector:=ground_truth' pixi run bash scripts/run_sim.sh --viewer
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+# colcon's setup.bash reads unset variables (COLCON_TRACE), so relax -u while sourcing it.
+set +u
 # shellcheck disable=SC1091
 source "$ROOT/ros_ws/install/setup.bash"
+set -u
 
 PY=python
 VIEWER=""

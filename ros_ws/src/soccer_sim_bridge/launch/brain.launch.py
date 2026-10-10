@@ -23,6 +23,11 @@ def _brain(context):
     role = LaunchConfiguration("role").perform(context)
     if role:
         overrides["game.player_role"] = role
+    # brain makes player game.initial_goalkeeper_id (1) the keeper regardless of player_role,
+    # so striker runs need another player number, e.g. player_id:=2.
+    player_id = LaunchConfiguration("player_id").perform(context)
+    if player_id:
+        overrides["game.player_id"] = int(player_id)
     return [
         Node(
             package="brain",
@@ -38,6 +43,7 @@ def generate_launch_description():
         [
             DeclareLaunchArgument("tree", default_value="game.xml"),
             DeclareLaunchArgument("role", default_value=""),
+            DeclareLaunchArgument("player_id", default_value=""),
             OpaqueFunction(function=_brain),
         ]
     )

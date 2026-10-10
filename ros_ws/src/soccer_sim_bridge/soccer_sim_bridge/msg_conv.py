@@ -60,7 +60,7 @@ def detections(stamp: Time, dets: list[Detection]) -> Detections:
     for d in dets:
         obj = DetectedObject()
         obj.label = d.label
-        obj.confidence = float(d.confidence)
+        obj.confidence = float(d.confidence) * 100.0  # percent, as Robotedge vision publishes it
         obj.xmin, obj.ymin, obj.xmax, obj.ymax = (int(v) for v in d.bbox)
         obj.position_projection = [float(d.pos_robot[0]), float(d.pos_robot[1])]
         obj.position = [float(d.pos_robot[0]), float(d.pos_robot[1]), 0.0]

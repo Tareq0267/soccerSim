@@ -16,7 +16,9 @@ def test_detections_fill_the_fields_brain_reads():
     mark = Detection("PenaltyPoint", 0.9, (1, 2, 3, 4), (3.0, 0.0), target_uv=(272.0, 300.0))
     msg = msg_conv.detections(STAMP, [det, mark])
     ball, pen = msg.detected_objects
-    assert ball.label == "Ball" and ball.confidence == pytest.approx(0.9)
+    # Robotedge vision publishes confidence in percent (vision_node.cpp: confidence * 100) and brain
+    # rejects < 50 (detectProcessMarkings, strategy.ball_confidence_threshold).
+    assert ball.label == "Ball" and ball.confidence == pytest.approx(90.0)
     assert (ball.xmin, ball.ymin, ball.xmax, ball.ymax) == (10, 20, 30, 40)
     assert list(ball.position_projection) == pytest.approx([2.0, -0.5])
     assert list(ball.target_uv) == []

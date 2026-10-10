@@ -136,7 +136,7 @@ setInterval(() => {
   post("/api/joystick", state);
 }, 50);
 
-for (const s of ["INITIAL", "READY", "SET", "PLAYING", "FINISHED"]) {
+for (const s of ["INITIAL", "READY", "SET", "PLAYING", "FINISHED", "SCHEDULE"]) {
   const b = document.createElement("button");
   b.textContent = s;
   b.onclick = () => post("/api/referee", {state: s});

@@ -51,7 +51,7 @@ def test_tracker_reports_goal_between_posts():
     t = ShotTracker(FD, goal_height=1.2)
     t.start(0.0)
     assert t.update(0.2, (-9.0, 0.0, 0.1), (-5.0, 0.0, 0.0)) is None
-    assert t.update(0.6, (GOAL_LINE_X - 0.05, 0.5, 0.1), (-5.0, 0.0, 0.0)) == "goal"
+    assert t.update(0.6, (GOAL_LINE_X - 0.15, 0.5, 0.1), (-5.0, 0.0, 0.0)) == "goal"
     assert t.tally == {"goal": 1, "no_goal": 0}
     assert t.update(0.7, (GOAL_LINE_X - 0.2, 0.5, 0.1), (-5.0, 0.0, 0.0)) is None  # one result per shot
 
@@ -59,7 +59,7 @@ def test_tracker_reports_goal_between_posts():
 def test_tracker_wide_shot_and_stopped_ball_are_no_goal():
     t = ShotTracker(FD, goal_height=1.2)
     t.start(0.0)
-    assert t.update(0.6, (GOAL_LINE_X - 0.05, 3.0, 0.1), (-5.0, 0.0, 0.0)) == "no_goal"  # wide of the post
+    assert t.update(0.6, (GOAL_LINE_X - 0.15, 3.0, 0.1), (-5.0, 0.0, 0.0)) == "no_goal"  # wide of the post
     t.start(1.0)
     assert t.update(1.2, (-8.0, 0.0, 0.1), (0.0, 0.0, 0.0)) is None  # grace period right after launch
     assert t.update(1.6, (-8.0, 0.0, 0.1), (0.0, 0.0, 0.0)) == "no_goal"  # stopped: saved or died
@@ -75,7 +75,14 @@ def test_tracker_times_out():
 def test_over_the_bar_is_no_goal():
     t = ShotTracker(FD, goal_height=1.2)
     t.start(0.0)
-    assert t.update(0.6, (GOAL_LINE_X - 0.05, 0.0, 1.5), (-5.0, 0.0, 1.0)) == "no_goal"
+    assert t.update(0.6, (GOAL_LINE_X - 0.15, 0.0, 1.5), (-5.0, 0.0, 1.0)) == "no_goal"
+
+
+def test_goal_needs_the_whole_ball_over_the_line():
+    t = ShotTracker(FD, goal_height=1.2, ball_radius=0.105)
+    t.start(0.0)
+    assert t.update(0.1, (GOAL_LINE_X - 0.05, 0.0, 0.105), (-3.0, 0.0, 0.0)) is None  # centre over, ball on line
+    assert t.update(0.2, (GOAL_LINE_X - 0.11, 0.0, 0.105), (-3.0, 0.0, 0.0)) == "goal"
 
 
 # ---- gamepad -------------------------------------------------------------
@@ -119,6 +126,13 @@ def test_override_holds_state_over_the_schedule():
     ref.override(1.0, state="PLAYING")
     assert ref.snapshot(1.5).state == 3
     assert ref.snapshot(50.0).state == 3
+
+
+def test_override_back_to_schedule_resumes_the_timeline():
+    ref = Referee(parse_schedule("0:3,1:20,2:3,3:0"), 131, 1, t0=0.0)
+    ref.override(1.0, state="FINISHED")
+    ref.override(2.0, state="SCHEDULE")
+    assert ref.snapshot(10.0).state == 1
 
 
 def test_opponent_corner_kick_counts_down_then_clears():

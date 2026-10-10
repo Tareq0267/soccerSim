@@ -72,14 +72,17 @@ class Referee:
 
     def override(self, now: float, state=None, set_play=None, kicking=None, stopped=None) -> None:
         # Validate everything first so a bad request never half-applies.
-        new_state = None if state is None else _lookup(STATES, state, "state")
+        resume = isinstance(state, str) and state.upper() == "SCHEDULE"
+        new_state = None if state is None or resume else _lookup(STATES, state, "state")
         new_set_play = None if set_play is None else _lookup(SET_PLAYS, set_play, "set_play")
         if kicking is not None and kicking not in ("us", "opponent"):
             raise ValueError(f"kicking must be 'us' or 'opponent', got {kicking!r}")
         if stopped is not None and not isinstance(stopped, bool):
             raise ValueError("stopped must be a bool")
 
-        if new_state is not None:
+        if resume:
+            self._manual_state = None
+        elif new_state is not None:
             self._manual_state = new_state
         if new_set_play is not None:
             self.set_play = new_set_play

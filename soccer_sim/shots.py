@@ -72,8 +72,9 @@ class ShotTracker:
     """Classifies the latest shot against our goal (-x): 'goal' or 'no_goal'."""
 
     def __init__(self, fd: FieldDims, goal_height: float, timeout_s: float = 8.0, rest_speed: float = 0.05,
-                 grace_s: float = 0.5):
+                 grace_s: float = 0.5, ball_radius: float = 0.105):
         self.fd = fd
+        self.ball_radius = ball_radius
         self.goal_height = goal_height
         self.timeout_s = timeout_s
         self.rest_speed = rest_speed
@@ -88,7 +89,7 @@ class ShotTracker:
         if self._started is None:
             return None
         x, y, z = (float(v) for v in ball_pos)
-        if x < -self.fd.length / 2:
+        if x < -self.fd.length / 2 - self.ball_radius:  # Laws of the Game: whole ball over the line
             inside = abs(y) < self.fd.goal_width / 2 and z < self.goal_height
             return self._finish("goal" if inside else "no_goal")
         elapsed = now - self._started

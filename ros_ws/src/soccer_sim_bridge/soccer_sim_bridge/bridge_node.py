@@ -72,7 +72,7 @@ class SimBridge(Node):
             parse_schedule(str(g("referee_schedule"))), self.team_id, self.opp_team_id, time.monotonic()
         )
         self.shot_panel = ShotPanel()
-        self.shot_tracker = ShotTracker(cfg.field, cfg.goal_height)
+        self.shot_tracker = ShotTracker(cfg.field, cfg.goal_height, ball_radius=cfg.ball_radius)
         self.last_shot = ""
         self.tick_count = 0
         self._joy: tuple[RemoteControllerState, float] | None = None

@@ -111,6 +111,15 @@ def test_odometry_continuous_after_getup(ctrl):
     assert math.hypot(after[0] - before[0], after[1] - before[1]) < 0.5
 
 
+def test_sideline_spawn_sees_enough_markings_to_localize(ctrl):
+    # brain's enter_field localisation needs >= locator.min_marker_count (4) markings in one frame,
+    # and accepts markings up to 15 m away (detectProcessMarkings).
+    run(ctrl, LocoState(), 1.0, Clock())
+    dets, _ = ctrl.perceive()
+    markings = [d for d in dets if d.label in ("LCross", "TCross", "XCross", "PenaltyPoint")]
+    assert len(markings) >= 4, [d.label for d in markings]
+
+
 def test_perceives_ball_placed_in_front():
     c = SoccerController(SimConfig(spawn_xy_yaw=(0.0, 0.0, 0.0), ball_xy=(2.0, 0.0)))
     c.start()
@@ -175,6 +184,16 @@ def test_yolo_detects_the_rendered_ball_at_the_right_range():
     true_x, true_y = world_to_robot_2d(ball[0], ball[1], pose.x, pose.y, pose.yaw)
     assert balls[0].confidence >= 0.4
     assert math.hypot(balls[0].pos_robot[0] - true_x, balls[0].pos_robot[1] - true_y) < 0.3
+
+
+def test_yolo_does_not_see_own_body_as_ball_when_looking_down():
+    # The chrome chest/hand meshes score up to 0.89 as "Ball" and brain has no self-detection filter.
+    c = SoccerController(SimConfig(ball_xy=(6.0, 4.0)))  # ball far out of view
+    c.start()
+    run(c, LocoState(head_pitch=0.9), 1.0, Clock())
+    rgb, _ = c.render()
+    dets, _ = c.perceive(rgb=rgb)
+    assert [d.bbox for d in dets if d.label == "Ball"] == []
 
 
 def test_ground_truth_ball_mode_skips_yolo():

@@ -72,7 +72,9 @@ class SimConfig:
     ball_xy: tuple[float, float] = (-6.0, -4.0)
     max_ball_range: float = 8.0
     max_goalpost_range: float = 12.0
-    max_marking_range: float = 5.0
+    # ponytail: real-vision detection range for crosses is unmeasured; brain accepts up to 15 m and needs
+    # >= 4 per frame to localise, which from the sideline spawn requires ~8.1 m. Calibrate from robot logs.
+    max_marking_range: float = 9.0
     max_line_range: float = 5.0
     max_depth_m: float = 10.0
     # ponytail: shadows/reflections cost ~12 ms per RGB frame on an M-series Mac and push camera ticks past the

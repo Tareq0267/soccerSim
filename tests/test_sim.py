@@ -221,6 +221,16 @@ def test_shoot_teleports_and_launches_the_ball_toward_our_goal(ctrl):
     assert ctrl.ball_position()[0] < -9.5
 
 
+def test_diagonal_shot_rolls_straight(ctrl):
+    # MuJoCo's default pyramidal friction cone decelerates x and y separately, bending a diagonal roll toward 45°.
+    heading = math.radians(-159.0)
+    ctrl.shoot(Shot(x=-5.0, y=1.5, speed=4.0, direction_deg=math.degrees(heading), elevation_deg=0.0))
+    run(ctrl, LocoState(), 2.5, Clock())
+    v = ctrl.ball_velocity()
+    assert np.linalg.norm(v[:2]) > 0.5  # still rolling
+    assert math.degrees(abs(math.remainder(math.atan2(v[1], v[0]) - heading, math.tau))) < 2.0
+
+
 def test_gamepad_overrides_brain_move(ctrl):
     # brain asks to walk backwards; the held stick (forward) wins, like the robot's firmware remote
     run(ctrl, LocoState(vx=-0.5), 3.0, Clock(), manual=(0.5, 0.0, 0.0))

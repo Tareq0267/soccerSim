@@ -51,6 +51,8 @@ class SoccerController(BaseController):
 
         self.mj_model = build_world(sim_cfg)
         self.mj_model.opt.timestep = cfg.mujoco.physics_dt
+        # Elliptic cone: friction opposes the actual slip direction; pyramidal bends diagonal ball rolls toward 45°.
+        self.mj_model.opt.cone = mujoco.mjtCone.mjCONE_ELLIPTIC
         self.mj_data = mujoco.MjData(self.mj_model)
         self.decimation = cfg.mujoco.decimation
 

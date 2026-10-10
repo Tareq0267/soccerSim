@@ -21,6 +21,7 @@ from .yolo_ball import YoloBallDetector
 
 HEAD_YAW_IDX, HEAD_PITCH_IDX = 0, 1  # T2_31DOF_CFG.joint_names order
 UPRIGHT_MIN_ZZ = 0.5  # trunk z-axis . world z; same threshold as booster_deploy's safety fallback
+ROBOT_VISUAL_GROUP = 1  # booster_assets T2 MJCF puts visual meshes in group 1 (collisions in 3, field/ball in 0)
 
 
 def _make_ball_detector(cfg: SimConfig) -> YoloBallDetector | None:
@@ -247,13 +248,17 @@ class SoccerController(BaseController):
         if self._renderer is None:  # created lazily on the stepping thread (OpenGL context affinity)
             self._renderer = mujoco.Renderer(self.mj_model, height=cam_cfg.height, width=cam_cfg.width)
         r = self._renderer
+        # ponytail: own body hidden from the head camera — YOLO scores the chrome chest/hand meshes up to 0.89 as
+        # "Ball" and brain has no self-filter. Costs self-occlusion; revisit if the real robot shows the same FP.
+        opt = mujoco.MjvOption()
+        opt.geomgroup[ROBOT_VISUAL_GROUP] = 0
         r.disable_depth_rendering()
-        r.update_scene(self.mj_data, camera=self._cam)
+        r.update_scene(self.mj_data, camera=self._cam, scene_option=opt)
         r.scene.flags[mujoco.mjtRndFlag.mjRND_SHADOW] = self.sim_cfg.render_shadows
         r.scene.flags[mujoco.mjtRndFlag.mjRND_REFLECTION] = self.sim_cfg.render_shadows
         rgb = r.render().copy()
         r.enable_depth_rendering()
-        r.update_scene(self.mj_data, camera=self._cam)
+        r.update_scene(self.mj_data, camera=self._cam, scene_option=opt)
         depth = r.render().astype(np.float32)
         r.disable_depth_rendering()
         return rgb, depth

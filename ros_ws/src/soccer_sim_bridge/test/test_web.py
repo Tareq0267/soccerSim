@@ -68,6 +68,19 @@ def test_callback_validation_errors_become_400(server):
     assert status == 400 and "unknown state" in body["error"]
 
 
+def test_overflowing_numbers_become_400_not_a_dropped_connection():
+    def on_joystick(payload):
+        float(payload["lx"])  # a 400-digit JSON integer raises OverflowError here
+
+    srv = ControlServer(0, on_joystick, lambda p: None, lambda p: None, lambda: {})
+    srv.start()
+    try:
+        status, body = post(f"http://127.0.0.1:{srv.port}/api/joystick", b'{"lx": 1' + b"0" * 400 + b"}")
+        assert status == 400
+    finally:
+        srv.stop()
+
+
 def test_unknown_paths_are_404(server):
     base, _ = server
     assert post(base + "/api/nope", b"{}")[0] == 404

@@ -37,6 +37,13 @@ def test_no_strike_when_real_ball_out_of_reach():
     assert out.strike_speed == 0.0
 
 
+@pytest.mark.parametrize("true_ball", [(-0.4, 0.0), (0.1, 0.4), (0.0, -0.45)])
+def test_no_strike_when_real_ball_is_beside_or_behind(true_ball):
+    # brain's (wrong) reference says aligned, but the real ball is within 0.55 m behind/beside the robot
+    out = VisualKickModel().step(ref(P.strike_ball_x, 0.0), 0.1, true_ball, KICK_V2)
+    assert out.strike_speed == 0.0
+
+
 def test_stale_or_missing_reference_stops_the_robot():
     m = VisualKickModel()
     assert m.step(None, 1.0, (1.0, 0.0), KICK_V2) == m.step(ref(1.0, 0.0, stamp=0.0), 1.0, (1.0, 0.0), KICK_V2)

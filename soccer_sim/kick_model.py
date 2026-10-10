@@ -36,7 +36,7 @@ class KickParams:
     strike_tol_x: float = 0.08
     strike_tol_y: float = 0.06
     strike_tol_dir: float = 0.25
-    reach: float = 0.55  # the real ball must be this close for a strike
+    true_ball_tol: float = 0.15  # the real ball must be within this of the strike point (not beside/behind)
     ball_decel: float = 0.8  # m/s^2 rolling deceleration used to turn "range" into launch speed
     v2_power_scale: float = 1.3  # VisualKickVersion.kV2 is documented as "stronger kicking force"
     max_ball_speed: float = 8.0
@@ -84,7 +84,9 @@ class VisualKickModel:
         ey = ref.ball_y
         edir = math.atan2(math.sin(ref.dir), math.cos(ref.dir))
         aligned = abs(ex) < p.strike_tol_x and abs(ey) < p.strike_tol_y and abs(edir) < p.strike_tol_dir
-        if aligned and math.hypot(*true_ball_robot) < p.reach:
+        tx, ty = true_ball_robot
+        at_foot = abs(tx - p.strike_ball_x) < p.true_ball_tol and abs(ty) < p.true_ball_tol
+        if aligned and at_foot:
             self._cooldown_until = now + p.cooldown
             return KickOutput(0.0, 0.0, 0.0, ball_speed_for_power(ref.power, version, p), ref.dir)
         return KickOutput(

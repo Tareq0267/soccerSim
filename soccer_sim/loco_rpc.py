@@ -101,6 +101,6 @@ def handle_request(state: LocoState, header: str, body: str, limits: VelocityLim
             state.visual_kick_active = start
             state.visual_kick_version = version
         # Every other id: acknowledged no-op.
-    except (KeyError, ValueError, TypeError):
+    except (KeyError, ValueError, TypeError, ArithmeticError):  # int(inf) raises OverflowError
         return RpcReply(json.dumps({"status": STATUS_BAD_REQUEST}), "")
     return _ok()

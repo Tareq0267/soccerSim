@@ -138,7 +138,7 @@ class SoccerController(BaseController):
         if manual is not None:  # held gamepad stick: firmware-level remote beats brain and the kick
             vx, vy, vyaw = manual
             self.kick_model.reset()
-        elif loco.kicking():
+        elif loco.kicking() and not self.fallen():  # a robot on the ground cannot kick
             if not self._was_kicking:
                 self.kick_model.reset()
             pose, ball = self.robot_pose(), self.ball_position()

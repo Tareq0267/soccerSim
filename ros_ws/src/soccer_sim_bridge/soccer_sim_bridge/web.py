@@ -58,7 +58,7 @@ class ControlServer:
                     if not isinstance(payload, dict):
                         raise ValueError("expected a JSON object")
                     handler(payload)
-                except (ValueError, TypeError, KeyError) as exc:
+                except (ValueError, TypeError, KeyError, ArithmeticError) as exc:  # huge ints overflow float()
                     return self._error(400, str(exc))
                 self._reply(200, b'{"ok": true}')
 

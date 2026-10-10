@@ -93,6 +93,9 @@ def test_unknown_ids_are_acknowledged_no_ops():
         (json.dumps({"api_id": API_CHANGE_MODE}), json.dumps({"mode": 42})),
         (json.dumps({"api_id": API_ROTATE_HEAD}), '{"pitch": Infinity, "yaw": 0}'),
         (json.dumps({"api_id": API_VISUAL_KICK}), json.dumps({"start": "yes", "version": 1})),
+        ('{"api_id": Infinity}', "{}"),  # int(inf) raises OverflowError
+        (json.dumps({"api_id": API_CHANGE_MODE}), '{"mode": 1e999}'),
+        (json.dumps({"api_id": API_VISUAL_KICK}), '{"start": true, "version": -Infinity}'),
     ],
 )
 def test_malformed_requests_are_rejected_without_state_change(header, body):

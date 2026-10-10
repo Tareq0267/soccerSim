@@ -146,6 +146,23 @@ def test_visual_kick_walks_onto_ball_and_launches_it():
     assert not c.fallen()
 
 
+def test_fallen_robot_never_kicks():
+    c = SoccerController(SimConfig(spawn_xy_yaw=(0.0, 0.0, 0.0), ball_xy=(0.4, 0.0), ball_detector="ground_truth"))
+    c.start()
+    clock = Clock()
+    run(c, LocoState(), 0.5, clock)
+    c.mj_data.qpos[3:7] = [math.cos(0.75), math.sin(0.75), 0.0, 0.0]  # roll 1.5 rad: lying down
+    mujoco.mj_forward(c.mj_model, c.mj_data)
+    assert c.fallen()
+    loco = LocoState(visual_kick_active=True)
+    aligned = KickRef(ball_x=0.40, ball_y=0.0, dir=0.0, power=3.0, stamp=0.0)
+    for _ in range(25):
+        c.apply(loco, clock.t, KickRef(**{**aligned.__dict__, "stamp": clock.t}))
+        c.step()
+        clock.t += DT
+        assert np.linalg.norm(c.ball_velocity()[:2]) < 1.0  # never launched
+
+
 def test_yolo_detects_the_rendered_ball_at_the_right_range():
     c = SoccerController(SimConfig(spawn_xy_yaw=(0.0, 0.0, 0.0), ball_xy=(2.0, 0.2)))
     c.start()

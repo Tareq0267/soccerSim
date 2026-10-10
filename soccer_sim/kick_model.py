@@ -25,7 +25,9 @@ class KickRef:
 @dataclass(frozen=True)
 class KickParams:
     # ponytail: hand-tuned approximation of the firmware kick; calibrate against real kick videos.
-    strike_ball_x: float = 0.25  # ball distance in front of the trunk at contact
+    # Tuned in sim: at 0.25 m the launched ball hits the T2's swinging foot (1.1 m/s, deflected);
+    # 0.35-0.45 m all launch cleanly, 0.40 is mid-band.
+    strike_ball_x: float = 0.40  # ball distance in front of the trunk at contact
     approach_gain: float = 1.5
     yaw_gain: float = 1.5
     max_vx: float = 0.8
@@ -34,7 +36,7 @@ class KickParams:
     strike_tol_x: float = 0.08
     strike_tol_y: float = 0.06
     strike_tol_dir: float = 0.25
-    reach: float = 0.45  # the real ball must be this close for a strike
+    reach: float = 0.55  # the real ball must be this close for a strike
     ball_decel: float = 0.8  # m/s^2 rolling deceleration used to turn "range" into launch speed
     v2_power_scale: float = 1.3  # VisualKickVersion.kV2 is documented as "stronger kicking force"
     max_ball_speed: float = 8.0

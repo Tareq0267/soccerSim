@@ -34,8 +34,8 @@ booster_assets = { path = "vendor/booster_assets", editable = true }
 
 [activation.env]
 PYTHONPATH = "$PIXI_PROJECT_ROOT/vendor/booster_deploy"
-ROBOTEDGE_ROOT = "/Users/johnnytan5/Robotedge-5v5-RCAP2026"
-SDK_ZIP = "$HOME/Downloads/sdk_release.zip"
+ROBOTEDGE_ROOT = "${ROBOTEDGE_ROOT:-$HOME/Robotedge-5v5-RCAP2026}"
+SDK_ZIP = "${SDK_ZIP:-$HOME/Downloads/sdk_release.zip}"
 
 [tasks]
 fetch-models = "bash scripts/fetch_models.sh"

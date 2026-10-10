@@ -15,7 +15,7 @@ Run the unmodified Robotedge `brain_node` against a simulated Booster T2 on a Ro
 git clone --recurse-submodules <this repo> && cd soccerSim
 pixi install
 pixi run fetch-models       # Booster's sim-trained YOLOv8 ball detector (sha256-checked)
-pixi run build-sim          # needs ~/Downloads/sdk_release.zip and $ROBOTEDGE_ROOT
+pixi run build-sim          # needs $SDK_ZIP (default ~/Downloads/sdk_release.zip) and $ROBOTEDGE_ROOT (default ~/Robotedge-5v5-RCAP2026); export either to override
 pixi run test               # fast tests
 pixi run test-slow          # physics + rendering tests
 pixi run test-ros           # bridge tests

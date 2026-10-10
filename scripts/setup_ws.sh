@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-ROBOTEDGE_ROOT="${ROBOTEDGE_ROOT:-/Users/johnnytan5/Robotedge-5v5-RCAP2026}"
+ROBOTEDGE_ROOT="${ROBOTEDGE_ROOT:-$HOME/Robotedge-5v5-RCAP2026}"
 SDK_ZIP="${SDK_ZIP:-$HOME/Downloads/sdk_release.zip}"
 PACKAGES="${PACKAGES:-brain}"
 SRC="$ROOT/ros_ws/src"

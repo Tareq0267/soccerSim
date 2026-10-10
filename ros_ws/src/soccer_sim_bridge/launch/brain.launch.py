@@ -9,7 +9,7 @@ from launch_ros.actions import Node
 
 
 def _brain(context):
-    root = os.environ.get("ROBOTEDGE_ROOT", "/Users/johnnytan5/Robotedge-5v5-RCAP2026")
+    root = os.environ.get("ROBOTEDGE_ROOT", os.path.expanduser("~/Robotedge-5v5-RCAP2026"))
     brain_dir = os.path.join(root, "src", "brain")
     overrides = {
         "tree_file_path": os.path.join(brain_dir, "behavior_trees", LaunchConfiguration("tree").perform(context)),

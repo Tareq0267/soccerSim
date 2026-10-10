@@ -11,7 +11,7 @@ from .config import SHOT_SLIDERS, SimConfig
 from .field import OPTICAL_FROM_MUJOCO_CAM, build_world, field_lines, goalposts, map_markings
 from .geometry import rpy_from_quat_wxyz, world_to_robot_2d, yaw_from_quat_wxyz
 from .kick_model import KickRef, VisualKickModel
-from .loco_rpc import LocoState
+from .loco_rpc import MOVING_MODES, LocoState
 from .odometry import OdometryTracker
 from .perception import (
     Camera, Detection, LineObs, Pose2D, detect_ball, detect_goalposts, detect_markings, visible_lines,
@@ -83,6 +83,7 @@ class SoccerController(BaseController):
         self._was_kicking = False
         self._renderer: mujoco.Renderer | None = None
         self.yolo = _make_ball_detector(sim_cfg)
+        self._rng = np.random.default_rng()
 
         sx, sy, syaw = sim_cfg.spawn_xy_yaw
         self.odometry = OdometryTracker(Pose2D(sx, sy, syaw))
@@ -136,7 +137,7 @@ class SoccerController(BaseController):
     # ---- inputs from brain -------------------------------------------------
     def apply(self, loco: LocoState, now: float, kick_ref: KickRef | None = None,
               manual: tuple[float, float, float] | None = None) -> None:
-        if manual is not None:  # held gamepad stick: firmware-level remote beats brain and the kick
+        if manual is not None and loco.mode in MOVING_MODES:  # held stick: firmware remote beats brain and kick
             vx, vy, vyaw = manual
             self.kick_model.reset()
         elif loco.kicking() and not self.fallen():  # a robot on the ground cannot kick
@@ -227,6 +228,7 @@ class SoccerController(BaseController):
 
     def perceive(self, rng=None, rgb: np.ndarray | None = None) -> tuple[list[Detection], list[LineObs]]:
         c = self.sim_cfg
+        rng = rng if rng is not None else self._rng
         cam, robot = self.camera(), self.robot_pose()
         dets: list[Detection] = []
         if self.yolo is not None and rgb is not None:

@@ -90,7 +90,8 @@ function stick(id, kx, ky) {
   }
   c.addEventListener("pointerdown", e => { c.setPointerCapture(e.pointerId); move(e); });
   c.addEventListener("pointermove", e => { if (c.hasPointerCapture(e.pointerId)) move(e); });
-  c.addEventListener("pointerup", () => { joy[kx] = 0; joy[ky] = 0; draw(); });
+  // fires after pointerup *and* pointercancel, so a cancelled touch never leaves the stick pushed
+  c.addEventListener("lostpointercapture", () => { joy[kx] = 0; joy[ky] = 0; draw(); });
   draw();
 }
 stick("left", "lx", "ly");
@@ -104,7 +105,7 @@ for (const name of BUTTONS) {
     btn.onclick = () => { held[name] = !held[name]; btn.classList.toggle("on", held[name]); };
   } else {
     btn.onpointerdown = () => { held[name] = true; btn.classList.add("on"); };
-    btn.onpointerup = btn.onpointerleave = () => { held[name] = false; btn.classList.remove("on"); };
+    btn.onpointerup = btn.onpointerleave = btn.onpointercancel = () => { held[name] = false; btn.classList.remove("on"); };
   }
   box.appendChild(btn);
 }

@@ -84,3 +84,11 @@ def test_overflowing_numbers_become_400_not_a_dropped_connection():
 def test_unknown_paths_are_404(server):
     base, _ = server
     assert post(base + "/api/nope", b"{}")[0] == 404
+
+
+def test_controller_page_recentres_sticks_and_releases_buttons_on_pointer_cancel(server):
+    # A cancelled touch (scroll, palm, tab switch) never sends pointerup; a stuck stick keeps the robot walking.
+    base, _ = server
+    with urllib.request.urlopen(base + "/", timeout=2) as r:
+        page = r.read()
+    assert b'"lostpointercapture"' in page and b"onpointercancel" in page

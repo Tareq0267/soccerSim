@@ -237,3 +237,18 @@ def test_render_produces_rgb_and_depth_of_the_floor(ctrl):
     centre = float(depth[224, 272])
     # camera ~1.2 m up, optical axis ~35 deg down -> floor ~2 m along the axis
     assert 1.0 < centre < 4.0
+
+
+def test_gamepad_cannot_walk_a_robot_still_in_prepare_mode(ctrl):
+    # boot sequence: the T2 stands in prepare until LT+Up; the stick must not walk it before then
+    run(ctrl, LocoState(mode=1), 2.0, Clock(), manual=(0.8, 0.0, 0.0))
+    x, _, _ = ctrl.odometer()
+    assert abs(x) < 0.2
+
+
+def test_detection_noise_std_perturbs_ground_truth_detections():
+    c = SoccerController(SimConfig(detection_noise_std=0.3))
+    c.start()
+    run(c, LocoState(), 0.5, Clock())
+    a, b = c.perceive()[0], c.perceive()[0]
+    assert a and [d.pos_robot for d in a] != [d.pos_robot for d in b]

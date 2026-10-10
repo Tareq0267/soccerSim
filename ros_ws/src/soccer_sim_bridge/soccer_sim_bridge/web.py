@@ -51,6 +51,8 @@ class ControlServer:
                     length = int(self.headers.get("Content-Length") or 0)
                 except ValueError:
                     return self._error(400, "bad Content-Length")
+                if length < 0:
+                    return self._error(400, "bad Content-Length")
                 if length > MAX_BODY_BYTES:
                     return self._error(413, "body too large")
                 try:

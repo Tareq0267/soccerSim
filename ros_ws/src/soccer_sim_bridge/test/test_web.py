@@ -92,3 +92,17 @@ def test_controller_page_recentres_sticks_and_releases_buttons_on_pointer_cancel
     with urllib.request.urlopen(base + "/", timeout=2) as r:
         page = r.read()
     assert b'"lostpointercapture"' in page and b"onpointercancel" in page
+
+
+def test_negative_content_length_is_400_not_a_hung_read(server):
+    import http.client
+    from urllib.parse import urlparse
+    base, calls = server
+    u = urlparse(base)
+    conn = http.client.HTTPConnection(u.hostname, u.port, timeout=2)
+    conn.putrequest("POST", "/api/joystick")
+    conn.putheader("Content-Type", "application/json")
+    conn.putheader("Content-Length", "-1")
+    conn.endheaders()
+    assert conn.getresponse().status == 400
+    assert calls["joystick"] == []

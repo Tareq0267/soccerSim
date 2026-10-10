@@ -104,3 +104,32 @@ def test_malformed_requests_are_rejected_without_state_change(header, body):
     r = handle_request(s, header, body)
     assert status(r) == STATUS_BAD_REQUEST
     assert (s.mode, s.vx, s.vy, s.vyaw, s.head_pitch, s.head_yaw, s.visual_kick_active) == before
+
+
+def test_get_up_drops_the_stale_walk_command():
+    s = LocoState()
+    handle_request(s, *req(API_MOVE, vx=0.8, vy=0.0, vyaw=0.0))
+    handle_request(s, *req(API_GET_UP))
+    assert s.effective_velocity() == (0.0, 0.0, 0.0)
+
+
+def test_visual_kick_stop_drops_the_pre_kick_walk_command():
+    s = LocoState()
+    handle_request(s, *req(API_MOVE, vx=0.8, vy=0.0, vyaw=0.0))
+    handle_request(s, *req(API_VISUAL_KICK, start=True, version=KICK_V2))
+    handle_request(s, *req(API_VISUAL_KICK, start=False, version=KICK_V2))
+    assert s.effective_velocity() == (0.0, 0.0, 0.0)
+
+
+def test_rotate_head_is_clamped_to_t2_joint_ranges():
+    s = LocoState()
+    handle_request(s, *req(API_ROTATE_HEAD, pitch=1.2, yaw=-2.0))
+    assert (s.head_pitch, s.head_yaw) == pytest.approx((0.401426, -1.09956))
+    handle_request(s, *req(API_ROTATE_HEAD, pitch=-1.0, yaw=2.0))
+    assert (s.head_pitch, s.head_yaw) == pytest.approx((-0.314159, 1.09956))
+
+
+def test_unknown_visual_kick_version_is_rejected():
+    s = LocoState()
+    r = handle_request(s, *req(API_VISUAL_KICK, start=True, version=7))
+    assert status(r) == STATUS_BAD_REQUEST and not s.visual_kick_active

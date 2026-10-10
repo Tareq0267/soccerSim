@@ -15,6 +15,9 @@ MODE_DAMPING, MODE_PREPARE, MODE_WALKING, MODE_CUSTOM, MODE_SOCCER = 0, 1, 2, 3,
 VALID_MODES = (MODE_DAMPING, MODE_PREPARE, MODE_WALKING, MODE_CUSTOM, MODE_SOCCER)
 MOVING_MODES = (MODE_WALKING, MODE_SOCCER)
 KICK_V1, KICK_V2 = 0, 1  # booster::robot::b1::VisualKickVersion
+# booster_assets T2_31dof.xml joint ranges; the real head stops there too.
+HEAD_PITCH_MIN, HEAD_PITCH_MAX = -0.314159, 0.401426
+HEAD_YAW_MAX = 1.09956
 
 STATUS_OK = 0
 # ponytail: the real SDK's error codes are undocumented; brain only checks status == 0.
@@ -81,7 +84,9 @@ def handle_request(state: LocoState, header: str, body: str, limits: VelocityLim
             state.vy = _clamp(vy, -limits.vy_max, limits.vy_max)
             state.vyaw = _clamp(vyaw, -limits.vyaw_max, limits.vyaw_max)
         elif api_id == API_ROTATE_HEAD:
-            state.head_pitch, state.head_yaw = _finite(params["pitch"], params["yaw"])
+            pitch, yaw = _finite(params["pitch"], params["yaw"])
+            state.head_pitch = _clamp(pitch, HEAD_PITCH_MIN, HEAD_PITCH_MAX)
+            state.head_yaw = _clamp(yaw, -HEAD_YAW_MAX, HEAD_YAW_MAX)
         elif api_id == API_CHANGE_MODE:
             mode = int(params["mode"])
             if mode not in VALID_MODES:
@@ -93,11 +98,17 @@ def handle_request(state: LocoState, header: str, body: str, limits: VelocityLim
             return _ok(json.dumps({"mode": state.mode}))
         elif api_id == API_GET_UP:
             state.getup_requested = True
+            state.vx = state.vy = state.vyaw = 0.0  # stand up still, not into the pre-fall walk
         elif api_id == API_VISUAL_KICK:
             start = params["start"]
             if not isinstance(start, bool):
                 raise ValueError("start must be a bool")
             version = int(params["version"])
+            if version not in (KICK_V1, KICK_V2):
+                raise ValueError(f"unknown visual kick version {version}")
+            if state.visual_kick_active and not start:
+                # ponytail: assumed the firmware stands still after a kick until the next Move; brain re-sends anyway.
+                state.vx = state.vy = state.vyaw = 0.0
             state.visual_kick_active = start
             state.visual_kick_version = version
         # Every other id: acknowledged no-op.

@@ -1,0 +1,23 @@
+<?xml version="1.0"?>
+<package format="3">
+  <name>soccer_sim_bridge</name>
+  <version>0.1.0</version>
+  <description>Impersonates the Booster T2 SDK, head camera, and vision topics for brain_node using a MuJoCo simulation.</description>
+  <maintainer email="haowentan5@gmail.com">Johnny</maintainer>
+  <license>Apache-2.0</license>
+  <exec_depend>rclpy</exec_depend>
+  <exec_depend>launch</exec_depend>
+  <exec_depend>launch_ros</exec_depend>
+  <exec_depend>std_msgs</exec_depend>
+  <exec_depend>geometry_msgs</exec_depend>
+  <exec_depend>sensor_msgs</exec_depend>
+  <exec_depend>booster_interface</exec_depend>
+  <exec_depend>booster_msgs</exec_depend>
+  <exec_depend>vision_interface</exec_depend>
+  <exec_depend>game_controller_interface</exec_depend>
+  <exec_depend>brain</exec_depend>
+  <test_depend>python3-pytest</test_depend>
+  <export>
+    <build_type>ament_python</build_type>
+  </export>
+</package>

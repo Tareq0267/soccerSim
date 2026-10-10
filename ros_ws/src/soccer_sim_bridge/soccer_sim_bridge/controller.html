@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Soccer Sim Controller</title>
+<style>
+  body { font-family: system-ui, sans-serif; margin: 16px; background: #111; color: #eee; }
+  section { border: 1px solid #333; border-radius: 8px; padding: 12px; margin-bottom: 12px; }
+  h1 { font-size: 20px; } h2 { font-size: 16px; margin: 0 0 8px; }
+  .sticks { display: flex; gap: 24px; flex-wrap: wrap; }
+  canvas { background: #222; border-radius: 50%; touch-action: none; }
+  button { margin: 3px; padding: 8px 12px; border-radius: 6px; border: 1px solid #555; background: #2a2a2a; color: #eee; }
+  button.on { background: #2f6f3f; }
+  label { margin-right: 12px; }
+  #status { font-family: ui-monospace, monospace; white-space: pre; }
+</style>
+</head>
+<body>
+<h1>Soccer Sim Controller</h1>
+
+<section>
+  <h2>Gamepad</h2>
+  <p id="pad">Drag the sticks. A physical gamepad plugged into this computer is used automatically.</p>
+  <div class="sticks">
+    <div><div>Left stick: walk</div><canvas id="left" width="180" height="180"></canvas></div>
+    <div><div>Right stick: turn</div><canvas id="right" width="180" height="180"></canvas></div>
+  </div>
+  <div id="buttons"></div>
+  <div>
+    <button data-combo="hat_u">Stand up (LT+Up)</button>
+    <button data-combo="b">Auto (LT+B)</button>
+    <button data-combo="x">Cancel / manual (LT+X)</button>
+    <button data-combo="a">Recalibrate (LT+A)</button>
+  </div>
+</section>
+
+<section>
+  <h2>Referee</h2>
+  <div id="states"></div>
+  <label>Set play
+    <select id="setplay">
+      <option>NONE</option><option>DIRECT_FREE_KICK</option><option>INDIRECT_FREE_KICK</option>
+      <option>PENALTY_KICK</option><option>THROW_IN</option><option>GOAL_KICK</option><option>CORNER_KICK</option>
+    </select>
+  </label>
+  <label><input type="radio" name="kicking" value="opponent" checked> opponent kicks</label>
+  <label><input type="radio" name="kicking" value="us"> we kick</label>
+  <label><input type="checkbox" id="stopped"> stopped (ball being placed)</label>
+  <button id="apply">Apply set play</button>
+</section>
+
+<section>
+  <h2>Shot</h2>
+  <p>Set origin, speed, direction and elevation with the sliders in the MuJoCo window (top right).</p>
+  <button id="shoot">Shoot with the MuJoCo slider values</button>
+</section>
+
+<section><h2>Status</h2><div id="status">connecting...</div></section>
+
+<script>
+const joy = {lx: 0, ly: 0, rx: 0, ry: 0};
+const held = {};
+const BUTTONS = ["a", "b", "x", "y", "lb", "rb", "lt", "rt", "back", "start", "hat_u", "hat_d", "hat_l", "hat_r"];
+const LATCHED = new Set(["lt", "rt"]);  // click to hold, click again to release (a mouse can only press one button)
+const PAD_BUTTONS = {0: "a", 1: "b", 2: "x", 3: "y", 4: "lb", 5: "rb", 6: "lt", 7: "rt", 8: "back", 9: "start",
+                     12: "hat_u", 13: "hat_d", 14: "hat_l", 15: "hat_r"};
+
+async function post(path, body) {
+  const r = await fetch(path, {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify(body)});
+  if (!r.ok) console.warn(path, r.status, await r.text());
+}
+
+function stick(id, kx, ky) {
+  const c = document.getElementById(id), g = c.getContext("2d"), R = c.width / 2;
+  function draw() {
+    g.clearRect(0, 0, c.width, c.height);
+    g.beginPath();
+    g.arc(R + joy[kx] * R * 0.8, R + joy[ky] * R * 0.8, 18, 0, 2 * Math.PI);
+    g.fillStyle = "#6cf";
+    g.fill();
+  }
+  function move(e) {
+    const b = c.getBoundingClientRect();
+    let x = (e.clientX - b.left - R) / (R * 0.8), y = (e.clientY - b.top - R) / (R * 0.8);
+    const n = Math.hypot(x, y);
+    if (n > 1) { x /= n; y /= n; }
+    joy[kx] = x; joy[ky] = y;  // screen-down is +y, matching RemoteControllerState (push front = -1)
+    draw();
+  }
+  c.addEventListener("pointerdown", e => { c.setPointerCapture(e.pointerId); move(e); });
+  c.addEventListener("pointermove", e => { if (c.hasPointerCapture(e.pointerId)) move(e); });
+  c.addEventListener("pointerup", () => { joy[kx] = 0; joy[ky] = 0; draw(); });
+  draw();
+}
+stick("left", "lx", "ly");
+stick("right", "rx", "ry");
+
+const box = document.getElementById("buttons");
+for (const name of BUTTONS) {
+  const btn = document.createElement("button");
+  btn.textContent = name.toUpperCase();
+  if (LATCHED.has(name)) {
+    btn.onclick = () => { held[name] = !held[name]; btn.classList.toggle("on", held[name]); };
+  } else {
+    btn.onpointerdown = () => { held[name] = true; btn.classList.add("on"); };
+    btn.onpointerup = btn.onpointerleave = () => { held[name] = false; btn.classList.remove("on"); };
+  }
+  box.appendChild(btn);
+}
+document.querySelectorAll("[data-combo]").forEach(btn => btn.onclick = () => {
+  const k = btn.dataset.combo;
+  held.lt = true; held[k] = true;
+  setTimeout(() => { held.lt = false; held[k] = false; }, 300);
+});
+
+function gamepadState() {
+  const pads = navigator.getGamepads ? [...navigator.getGamepads()] : [];
+  const pad = pads.find(p => p && p.connected);
+  if (!pad) return null;
+  const s = {lx: pad.axes[0] || 0, ly: pad.axes[1] || 0, rx: pad.axes[2] || 0, ry: pad.axes[3] || 0};
+  for (const [i, name] of Object.entries(PAD_BUTTONS)) s[name] = !!(pad.buttons[i] && pad.buttons[i].pressed);
+  return s;
+}
+
+setInterval(() => {
+  const state = {...joy};
+  for (const name of BUTTONS) state[name] = !!held[name];
+  const pad = gamepadState();
+  if (pad) {
+    for (const k of ["lx", "ly", "rx", "ry"]) if (Math.abs(pad[k]) > Math.abs(state[k])) state[k] = pad[k];
+    for (const name of BUTTONS) state[name] = state[name] || pad[name];
+    document.getElementById("pad").textContent = "Physical gamepad connected.";
+  }
+  post("/api/joystick", state);
+}, 50);
+
+for (const s of ["INITIAL", "READY", "SET", "PLAYING", "FINISHED"]) {
+  const b = document.createElement("button");
+  b.textContent = s;
+  b.onclick = () => post("/api/referee", {state: s});
+  document.getElementById("states").appendChild(b);
+}
+document.getElementById("apply").onclick = () => post("/api/referee", {
+  set_play: document.getElementById("setplay").value,
+  kicking: document.querySelector("input[name=kicking]:checked").value,
+  stopped: document.getElementById("stopped").checked,
+});
+document.getElementById("shoot").onclick = () => post("/api/shoot", {});
+
+setInterval(async () => {
+  try {
+    const s = await (await fetch("/api/status")).json();
+    document.getElementById("status").textContent = JSON.stringify(s, null, 2);
+  } catch (e) {
+    document.getElementById("status").textContent = "bridge not reachable";
+  }
+}, 500);
+</script>
+</body>
+</html>

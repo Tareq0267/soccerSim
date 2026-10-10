@@ -1,0 +1,73 @@
+import json
+import urllib.error
+import urllib.request
+
+import pytest
+
+from soccer_sim_bridge.web import ControlServer
+
+pytestmark = pytest.mark.ros
+
+
+@pytest.fixture
+def server():
+    calls = {"joystick": [], "referee": [], "shoot": []}
+
+    def on_referee(payload):
+        if payload.get("state") == "BOGUS":
+            raise ValueError("unknown state 'BOGUS'")
+        calls["referee"].append(payload)
+
+    srv = ControlServer(0, calls["joystick"].append, on_referee, calls["shoot"].append, lambda: {"state": "PLAYING"})
+    srv.start()
+    yield f"http://127.0.0.1:{srv.port}", calls
+    srv.stop()
+
+
+def post(url, body: bytes, ctype="application/json"):
+    req = urllib.request.Request(url, data=body, method="POST", headers={"Content-Type": ctype})
+    try:
+        with urllib.request.urlopen(req, timeout=2) as r:
+            return r.status, json.loads(r.read())
+    except urllib.error.HTTPError as e:
+        return e.code, json.loads(e.read())
+
+
+def test_serves_the_controller_page(server):
+    base, _ = server
+    with urllib.request.urlopen(base + "/", timeout=2) as r:
+        assert r.status == 200 and b"Soccer Sim Controller" in r.read()
+
+
+def test_status_endpoint(server):
+    base, _ = server
+    with urllib.request.urlopen(base + "/api/status", timeout=2) as r:
+        assert json.loads(r.read()) == {"state": "PLAYING"}
+
+
+def test_posts_reach_their_callbacks(server):
+    base, calls = server
+    assert post(base + "/api/joystick", b'{"lx": 0.5}')[0] == 200
+    assert post(base + "/api/referee", b'{"state": "READY"}')[0] == 200
+    assert post(base + "/api/shoot", b"{}")[0] == 200
+    assert calls == {"joystick": [{"lx": 0.5}], "referee": [{"state": "READY"}], "shoot": [{}]}
+
+
+def test_rejects_bad_json_wrong_type_and_oversized_bodies(server):
+    base, calls = server
+    assert post(base + "/api/joystick", b"{not json")[0] == 400
+    assert post(base + "/api/joystick", b"[1, 2]")[0] == 400
+    assert post(base + "/api/joystick", b'{"lx": 0.5}', ctype="text/plain")[0] == 415
+    assert post(base + "/api/joystick", b"{" + b" " * 5000 + b"}")[0] == 413
+    assert calls["joystick"] == []
+
+
+def test_callback_validation_errors_become_400(server):
+    base, _ = server
+    status, body = post(base + "/api/referee", b'{"state": "BOGUS"}')
+    assert status == 400 and "unknown state" in body["error"]
+
+
+def test_unknown_paths_are_404(server):
+    base, _ = server
+    assert post(base + "/api/nope", b"{}")[0] == 404

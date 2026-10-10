@@ -40,5 +40,7 @@ SDK_ZIP = "$HOME/Downloads/sdk_release.zip"
 [tasks]
 fetch-models = "bash scripts/fetch_models.sh"
 build-ws = "bash scripts/setup_ws.sh"
+build-sim = { cmd = "bash scripts/setup_ws.sh", env = { PACKAGES = "brain soccer_sim_bridge" } }
+test-ros = "bash -c 'source ros_ws/install/setup.bash && pytest -m \"ros and not slow\" ros_ws/src/soccer_sim_bridge/test -p no:cacheprovider'"
 test = "pytest -m 'not slow and not ros'"
 test-slow = "pytest -m slow"

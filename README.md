@@ -8,6 +8,13 @@ It runs the team's real, unmodified `brain_node` against a simulated Booster T2 
 difference. You can try a behaviour-tree or strategy change on your laptop, fire shots at the keeper,
 run set plays and watch what the robot decides, all before taking it to the field.
 
+| 6 m/s shot to the corner | 4 m/s shot from wide, to the near post |
+|---|---|
+| ![Keeper saves a 6 m/s shot aimed at the left corner](docs/media/save_corner.gif) | ![Keeper saves a 4 m/s shot from the wide left aimed at the near post](docs/media/save_near_post.gif) |
+
+The goalkeeper brain at work. The text along the top is brain's live decision (`retreat`, then
+`save` once it judges the shot is coming at goal), the walk command it sends, and the ball's speed. (Recorded headless with `SIM_VY_MAX=1.7`.)
+
 ## What it is (and isn't)
 
 The goal is **testing brain logic**: decisions, positioning and timing under believable conditions.
@@ -23,6 +30,10 @@ The physics is only as realistic as that needs.
 | Posts, field lines, markings | Ground truth projected through the camera | Perfect: no occlusion or false detections |
 | Localisation, odometry | Brain's own localisation runs on the simulated detections; odometry is ground truth from the spawn point | Brain's code, cleaner inputs |
 | Referee, gamepad | GameController messages and remote-controller state, sent from a browser tab | Same messages brain reads |
+
+<img src="docs/media/head_camera.png" alt="Rendered head-camera frame: the field, a ball and the far goal" width="420">
+
+*What brain sees: a head-camera frame as rendered for the YOLO ball detector.*
 
 Use it to check **what brain decides and where it goes**. Don't use it to tune walking speeds, kick
 power, or anything that depends on the vision model's exact numbers.
@@ -98,6 +109,8 @@ MuJoCo window, which is faster.
 - **Other launch arguments:** `tree:=<file in src/brain/behavior_trees>`. The default is `game.xml`.
 
 ### Testing from the controller tab
+
+<img src="docs/media/controller.png" alt="Controller tab: virtual gamepad, referee panel, ball placement and preset shots grouped by speed" width="560">
 
 - **Reset ball to centre spot** and **Reset robot to goal centre**.
 - **Place ball (in keeper's view)** puts a stationary ball where the keeper can see it, so it

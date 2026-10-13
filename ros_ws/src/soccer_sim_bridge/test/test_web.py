@@ -81,6 +81,17 @@ def test_overflowing_numbers_become_400_not_a_dropped_connection():
         srv.stop()
 
 
+def test_reset_robot_route_reaches_its_callback():
+    calls = []
+    srv = ControlServer(0, lambda p: None, lambda p: None, lambda p: None, lambda: {}, on_reset_robot=calls.append)
+    srv.start()
+    try:
+        assert post(f"http://127.0.0.1:{srv.port}/api/reset_robot", b"{}")[0] == 200
+        assert calls == [{}]
+    finally:
+        srv.stop()
+
+
 def test_unknown_paths_are_404(server):
     base, _ = server
     assert post(base + "/api/nope", b"{}")[0] == 404

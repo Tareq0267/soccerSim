@@ -2,6 +2,7 @@
 
 import json
 import math
+import os
 from dataclasses import dataclass
 
 API_CHANGE_MODE = 2000
@@ -28,7 +29,7 @@ STATUS_BAD_REQUEST = 1
 class VelocityLimits:
     vx_min: float = -0.7
     vx_max: float = 3.0
-    vy_max: float = 0.8
+    vy_max: float = float(os.environ.get("SIM_VY_MAX", 0.8))  # SIM_VY_MAX: try other lateral limits without editing code
     vyaw_max: float = 2.0
 
 

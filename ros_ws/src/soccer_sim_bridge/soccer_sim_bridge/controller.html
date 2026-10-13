@@ -54,6 +54,10 @@
   <h2>Shot</h2>
   <p>Set origin, speed, direction and elevation with the sliders in the MuJoCo window (top right).</p>
   <button id="shoot">Shoot with the MuJoCo slider values</button>
+  <button id="reset_ball">Reset ball to centre spot</button>
+  <button id="reset_robot">Reset robot to goal centre</button>
+  <div id="ball_spots">Place ball (in keeper's view): </div>
+  <div id="presets"></div>
 </section>
 
 <section><h2>Status</h2><div id="status">connecting...</div></section>
@@ -148,6 +152,46 @@ document.getElementById("apply").onclick = () => post("/api/referee", {
   stopped: document.getElementById("stopped").checked,
 });
 document.getElementById("shoot").onclick = () => post("/api/shoot", {});
+// speed 0 = place the ball at rest
+document.getElementById("reset_ball").onclick = () =>
+  post("/api/shoot", {x: 0, y: 0, speed: 0, direction_deg: 0, elevation_deg: 0});
+document.getElementById("reset_robot").onclick = () => post("/api/reset_robot", {});
+
+// Preset shots at our goal (goal line x = -11, posts y = +-1.3): [label, origin x, origin y, target y on goal line]
+const PRESET_SHOTS = [
+  ["7 m centre -> left corner", -4.0, 0.0, 1.0],
+  ["7 m centre -> right corner", -4.0, 0.0, -1.0],
+  ["7 m centre -> middle", -4.0, 0.0, 0.0],
+  ["7 m left -> far corner", -4.0, 2.0, -1.0],
+  ["7 m right -> far corner", -4.0, -2.0, 1.0],
+  ["4 m box -> left corner", -7.0, 0.0, 1.0],
+  ["4 m box -> right corner", -7.0, 0.0, -1.0],
+  ["wide left -> near post", -6.5, 3.5, 1.0],
+  ["wide right -> near post", -6.5, -3.5, -1.0],
+];
+// Ball spots = the preset shot origins: within the keeper's ~8 m detection range, >= 2.5 m away so it still retreats.
+const BALL_SPOTS = [
+  ["7 m centre", -4.0, 0.0], ["7 m left", -4.0, 2.0], ["7 m right", -4.0, -2.0],
+  ["4 m box", -7.0, 0.0], ["wide left", -6.5, 3.5], ["wide right", -6.5, -3.5],
+];
+for (const [label, x, y] of BALL_SPOTS) {
+  const b = document.createElement("button");
+  b.textContent = label;
+  b.onclick = () => post("/api/shoot", {x, y, speed: 0, direction_deg: 0, elevation_deg: 0});
+  document.getElementById("ball_spots").appendChild(b);
+}
+for (const speed of [4, 6, 8]) {
+  const group = document.createElement("div");
+  group.innerHTML = `<h3>${speed} m/s</h3>`;
+  for (const [label, x, y, ty] of PRESET_SHOTS) {
+    const b = document.createElement("button");
+    b.textContent = label;
+    const direction_deg = Math.atan2(ty - y, -11.0 - x) * 180 / Math.PI;
+    b.onclick = () => post("/api/shoot", {x, y, speed, direction_deg, elevation_deg: 0});
+    group.appendChild(b);
+  }
+  document.getElementById("presets").appendChild(group);
+}
 
 setInterval(async () => {
   try {

@@ -78,6 +78,7 @@ class SimBridge(Node):
         self._joy: tuple[RemoteControllerState, float] | None = None
         self._pending_shots: list[Shot] = []
         self._fire_panel = False
+        self._reset_robot = False
         self._status: dict = {}
 
         self.create_subscription(RpcReqMsg, "LocoApiTopicReq", self.on_rpc, 10)
@@ -102,7 +103,8 @@ class SimBridge(Node):
         self.web: ControlServer | None = None
         port = int(g("web_port"))
         if port > 0:
-            self.web = ControlServer(port, self.on_web_joystick, self.on_web_referee, self.on_web_shoot, self.status)
+            self.web = ControlServer(port, self.on_web_joystick, self.on_web_referee, self.on_web_shoot, self.status,
+                                     on_reset_robot=self.on_web_reset_robot)
             self.web.start()
             self.get_logger().info(f"controller tab: http://127.0.0.1:{self.web.port}/")
 
@@ -158,6 +160,10 @@ class SimBridge(Node):
             else:
                 self._pending_shots.append(shot)
 
+    def on_web_reset_robot(self, _payload: dict) -> None:
+        with self.lock:
+            self._reset_robot = True
+
     def status(self) -> dict:
         with self.lock:
             return dict(self._status)
@@ -177,6 +183,10 @@ class SimBridge(Node):
             self.sim.apply(self.loco, now, self.kick_ref, manual)
             shots, self._pending_shots = self._pending_shots, []
             fire_panel, self._fire_panel = self._fire_panel, False
+            reset_robot, self._reset_robot = self._reset_robot, False
+
+        if reset_robot:  # keeper's home: goal centre, 1 m in front of the line, facing the field
+            self.sim.reset_robot(-10.0, 0.0, 0.0)
 
         panel = self.sim.shot_panel_values()
         panel_shot = self.shot_panel.read(panel)
@@ -186,7 +196,8 @@ class SimBridge(Node):
             shots.append(Shot.from_panel(panel))
         for shot in shots:
             self.sim.shoot(shot)
-            self.shot_tracker.start(now)
+            if shot.speed > 0:  # speed 0 just places the ball; keep it out of the goal tally
+                self.shot_tracker.start(now)
             self.get_logger().info(f"shot: {shot}")
 
         self.sim.step()

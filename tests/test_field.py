@@ -107,7 +107,7 @@ def test_camera_is_placed_with_team_calibration():
 
 
 def test_camera_defaults_match_team_vision_yaml():
-    root = Path(os.environ.get("ROBOTEDGE_ROOT", "/Users/johnnytan5/Robotedge-5v5-RCAP2026"))
+    root = Path(os.environ.get("ROBOTEDGE_ROOT", Path.home() / "Robotedge-5v5-RCAP2026"))
     path = root / "src/vision/config/vision.yaml"
     if not path.exists():
         pytest.skip(f"{path} not found")

@@ -188,13 +188,42 @@ pixi run test-ros    # bridge tests: needs build-sim, and no other sim on the sa
 - Ball rolling friction and the kick's power-to-speed mapping are guesses, not calibrated values.
 - Camera frames render without shadows or reflections, to keep the sim fast.
 
+## Zoomlion Z01 (work in progress)
+
+The `zoomlion-z01` branch adds Zoomlion's Z01 humanoid next to the T2. So far this covers the Python core
+(`soccer_sim`) only; the ROS bridge still drives the T2. Survey of Zvalley's repos and English
+translations of their docs: [docs/zoomlion/](docs/zoomlion/NOTES.md).
+
+| Part | Z01 |
+|---|---|
+| Body | Zvalley's `Z01_std_add_head` MJCF (29 joints, 2-joint head), the same file the policy was trained on |
+| Walking | Zvalley's `z01_velocity_flat_base.onnx` from Zlab_Gym, run with onnxruntime at 50 Hz on 200 Hz physics |
+| Head camera | Placeholder: T2 intrinsics on the MJCF's camera mount, looking straight ahead. Replace with a Z01 calibration |
+| Kick, ball, field, YOLO, referee | Same as the T2 |
+
+It needs no ROS, Booster code or torch, so it runs on Windows too:
+
+```bash
+git submodule update --init vendor/Zlab_Gym
+pip install mujoco numpy scipy pyyaml opencv-python-headless onnxruntime pytest
+python scripts/view_z01.py --vx 0.6 --vyaw 0.3     # watch it walk
+```
+
+From Python, `Z01SoccerController(z01_sim_config(...))` has the same interface as `SoccerController`.
+
+**The released walk policy has a dead zone.** It barely steps for linear commands below about 0.33 m/s
+(magnitude of vx, vy together) or turns below about 0.4 rad/s, and commands are clamped to the range it
+was trained on (vx ±1.0, vy ±0.5, vyaw ±1.0). Brain's small positioning steps therefore do nothing in the
+sim. Whether the robot's on-board gait behaves the same is unknown.
+
 ## Licence and third-party code
 
 soccerSim's own code is MIT-licensed (see `LICENSE`). The parts below aren't covered by that.
 
 
-- `vendor/booster_deploy` and `vendor/booster_assets` are Booster Robotics' public repos. They're
-  included as git submodules, under their own licences.
+- `vendor/booster_deploy` and `vendor/booster_assets` are Booster Robotics' public repos, and
+  `vendor/Zlab_Gym` is Zvalley Robotics' (Apache-2.0). They're included as git submodules, under their
+  own licences.
 - `pixi run fetch-models` downloads the YOLOv8 ball model from Booster's public `robocup_demo` repo;
   it isn't committed here. Ultralytics weights are AGPL-3.0, so don't ship them in anything you
   distribute.

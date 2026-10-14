@@ -33,6 +33,9 @@ class KickParams:
     max_vx: float = 0.8
     max_vy: float = 0.4
     max_vyaw: float = 1.0
+    # Walk policies with a dead zone (the Z01's ignores |v| < ~0.33 m/s) stall short of the strike point;
+    # the approach is never slower than this while there is still distance to cover. 0 = pure proportional.
+    min_approach_speed: float = 0.0
     strike_tol_x: float = 0.08
     strike_tol_y: float = 0.06
     strike_tol_dir: float = 0.25
@@ -89,8 +92,8 @@ class VisualKickModel:
         if aligned and at_foot:
             self._cooldown_until = now + p.cooldown
             return KickOutput(0.0, 0.0, 0.0, ball_speed_for_power(ref.power, version, p), ref.dir)
-        return KickOutput(
-            _clamp(p.approach_gain * ex, p.max_vx),
-            _clamp(p.approach_gain * ey, p.max_vy),
-            _clamp(p.yaw_gain * edir, p.max_vyaw),
-        )
+        vx, vy = _clamp(p.approach_gain * ex, p.max_vx), _clamp(p.approach_gain * ey, p.max_vy)
+        speed = math.hypot(vx, vy)
+        if 0.0 < speed < p.min_approach_speed:
+            vx, vy = vx * p.min_approach_speed / speed, vy * p.min_approach_speed / speed
+        return KickOutput(vx, vy, _clamp(p.yaw_gain * edir, p.max_vyaw))

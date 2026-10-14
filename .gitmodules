@@ -4,3 +4,6 @@
 [submodule "vendor/booster_assets"]
 	path = vendor/booster_assets
 	url = https://github.com/BoosterRobotics/booster_assets.git
+[submodule "vendor/Zlab_Gym"]
+	path = vendor/Zlab_Gym
+	url = https://github.com/Zvalley-Robotics/Zlab_Gym.git

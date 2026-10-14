@@ -2,10 +2,9 @@ import math
 
 import mujoco
 import numpy as np
-from booster_assets import BOOSTER_ASSETS_DIR
-from booster_deploy.robots.t2 import T2_31DOF_CFG
 
 from .config import SHOT_SLIDERS, FieldDims, SimConfig
+from .robots import RobotSpec, t2_spec
 
 Segment = tuple[tuple[float, float], tuple[float, float]]
 
@@ -66,16 +65,15 @@ def goalposts(fd: FieldDims) -> list[tuple[float, float]]:
     return [(xs * fd.length / 2, ys * fd.goal_width / 2) for xs in (-1.0, 1.0) for ys in (1.0, -1.0)]
 
 
-def robot_mjcf_path() -> str:
-    return T2_31DOF_CFG.mjcf_path.replace("{BOOSTER_ASSETS_DIR}", str(BOOSTER_ASSETS_DIR))
-
-
 def _yaw_quat(yaw: float) -> list[float]:
     return [math.cos(yaw / 2), 0.0, 0.0, math.sin(yaw / 2)]
 
 
-def build_world(cfg: SimConfig) -> mujoco.MjModel:
-    spec = mujoco.MjSpec.from_file(robot_mjcf_path())
+def build_world(cfg: SimConfig, robot: RobotSpec | None = None) -> mujoco.MjModel:
+    robot = robot if robot is not None else t2_spec()
+    spec = mujoco.MjSpec.from_file(robot.mjcf_path)
+    if robot.prepare is not None:
+        robot.prepare(spec)
     world = spec.worldbody
     rgb_role = int(mujoco.mjtTextureRole.mjTEXROLE_RGB)
 
@@ -100,6 +98,11 @@ def build_world(cfg: SimConfig) -> mujoco.MjModel:
     _material("ball_mat", "ball_tex")
 
     floor = spec.geom("floor")
+    if floor is None:  # a bare robot model (e.g. one made for mjlab, which supplies its own terrain)
+        floor = world.add_geom(name="floor", type=mujoco.mjtGeom.mjGEOM_PLANE)
+        world.add_light(name="sun", pos=[0.0, 0.0, 20.0], dir=[0.0, 0.0, -1.0],
+                        type=mujoco.mjtLightType.mjLIGHT_DIRECTIONAL,
+                        diffuse=[0.8, 0.8, 0.8], ambient=[0.3, 0.3, 0.3])
     floor.material = "turf_mat"
     # Finite render size so the texture repeat is defined; planes still collide infinitely.
     floor.size = [cfg.field.length / 2 + 3.0, cfg.field.width / 2 + 3.0, 0.1]
@@ -151,26 +154,26 @@ def build_world(cfg: SimConfig) -> mujoco.MjModel:
     cam_to_head = cfg.camera.cam_to_head_matrix()
     cam_quat = np.zeros(4)
     mujoco.mju_mat2Quat(cam_quat, (cam_to_head[:3, :3] @ OPTICAL_FROM_MUJOCO_CAM).reshape(9))
-    spec.body("head_pitch_link").add_camera(
+    spec.body(robot.head_body).add_camera(
         name="head_rgb",
         pos=cam_to_head[:3, 3].tolist(),
         quat=cam_quat.tolist(),
         fovy=math.degrees(2.0 * math.atan(cfg.camera.height / 2 / cfg.camera.fy)),
     )
 
-    # The T2 MJCF already has an "imu" site at the trunk origin; add noise-free sensors on it.
+    # Both robot MJCFs have an "imu" site at the trunk origin; add noise-free sensors on it.
     spec.add_sensor(name="imu_gyro", type=mujoco.mjtSensor.mjSENS_GYRO, objtype=mujoco.mjtObj.mjOBJ_SITE, objname="imu")
     spec.add_sensor(
         name="imu_acc", type=mujoco.mjtSensor.mjSENS_ACCELEROMETER, objtype=mujoco.mjtObj.mjOBJ_SITE, objname="imu"
     )
 
-    for act in spec.actuators:  # only the 31 robot motors exist at this point
+    for act in spec.actuators:  # only the robot motors exist at this point
         act.group = ROBOT_ACTUATOR_GROUP
     for name, lo, hi, _default in SHOT_SLIDERS:
         # ponytail: zero-gain actuators used purely as viewer sliders; they never apply force.
         slider = spec.add_actuator(
             name=name,
-            target="aa_head_yaw_joint",
+            target=robot.slider_joint,
             trntype=mujoco.mjtTrn.mjTRN_JOINT,
             ctrllimited=mujoco.mjtLimited.mjLIMITED_TRUE,
             ctrlrange=[lo, hi],

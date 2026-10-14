@@ -69,3 +69,11 @@ def test_power_maps_to_rollout_distance():
 
 def test_v2_kicks_harder_than_v1():
     assert ball_speed_for_power(3.0, KICK_V2, P) > ball_speed_for_power(3.0, KICK_V1, P)
+
+
+def test_min_approach_speed_keeps_a_dead_zone_policy_walking_but_not_a_proportional_one():
+    ref = KickRef(ball_x=0.50, ball_y=0.0, dir=0.0, power=3.0, stamp=0.0)
+    slow = VisualKickModel().step(ref, 0.0, (0.50, 0.0), KICK_V2)
+    assert slow.vx == pytest.approx(0.15)  # 1.5 * 0.10 m
+    boosted = VisualKickModel(KickParams(min_approach_speed=0.35)).step(ref, 0.0, (0.50, 0.0), KICK_V2)
+    assert boosted.vx == pytest.approx(0.35) and boosted.vy == pytest.approx(0.0)
